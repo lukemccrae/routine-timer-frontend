@@ -2,12 +2,61 @@ import React, {Component} from 'react';
 import ShowRegister from './showRegister';
 import Button from 'react-bootstrap/Button';
 import Form from 'react-bootstrap/Form';
-import Col from 'react-bootstrap/Col';
+import 'whatwg-fetch';
+import {setInStorage} from '../utils/storage';
 
 class Register extends Component {
   constructor(props) {
     super(props)
+    this.state = {}
+
+    this.onTextboxChangeSignInEmail = this.onTextboxChangeSignInEmail.bind(this)
+    this.onTextboxChangeSignInPassword = this.onTextboxChangeSignInPassword.bind(this)
+    this.onSignIn = this.onSignIn.bind(this)
   }
+
+  onTextboxChangeSignInEmail(event) {
+    this.setState({signInEmail: event.target.value})
+  }
+
+  onTextboxChangeSignInPassword(event) {
+    this.setState({signInPassword: event.target.value})
+  }
+
+  onSignIn() {
+    fetch(`/api/account/signin`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        email: this.state.signInEmail,
+        password: this.state.signInPassword
+      })
+    })
+      .then(res => res.json())
+      .then(json => {
+        if(json.success) {
+          setInStorage('the_main_app', { token: json.token })
+          this.setState({
+            signInError: json.message,
+            isLoading: false,
+            signInEmail: '',
+            signInPassword: '',
+            token: json.token,
+            timers: json.timers,
+            username: json.user,
+            groups: json.groups
+          })
+        } else {
+          this.setState({
+            signInError: json.message,
+            isLoading: false
+          })
+        }
+      });
+  }
+
   render(props) {
     return (
       <div className="App">
@@ -33,7 +82,7 @@ class Register extends Component {
                   onChange={this.onTextboxChangeSignInPassword}
                 />
               </Form.Group>
-              <Button variant="primary" type="submit">
+              <Button onClick={this.onSignIn} variant="primary" type="submit">
                 Sign In
               </Button>
             </Form>
